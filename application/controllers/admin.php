@@ -1,0 +1,155 @@
+<?php
+
+class Admin extends CI_Controller {
+
+    function __construct()
+    {
+        parent::__construct();
+        $this->load->library('form_validation');
+    }
+
+    function Admin()
+    {
+        //parent::Controller();
+        #parent::Controller();
+        //$this->load->model('News_model');
+
+        $this->load->library('validation');
+    }
+
+    function index()
+    {
+        if (!$this->session->userdata("admin"))
+        {
+            redirect("admin/login");
+        }
+        $this->load->view('admin/index');
+    }
+
+
+
+    function editPassword()
+    {
+        if (!$this->session->userdata("admin"))
+        {
+            redirect("admin/login");
+        }
+        $msg['error'] = '';
+        $this->load->view('admin/editPassword',$msg);
+    }
+
+    function updatePassword()
+    {
+        $rules['old'] = "required";
+        $rules['password'] = "required";
+        $rules['password2'] = "required|matches[password]";
+        $this->form_validation->set_rules($rules);
+
+        $fields['old'] = '旧密码';
+        $fields['password'] = '新密码';
+        $fields['password2'] = '密码确认';
+        $this->form_validation->set_rules($fields);
+
+
+        $msg['error'] = '';
+
+        if ($this->form_validation->run() == FALSE){
+            $this->load->view('admin/editPassword',$msg);
+        }
+        else
+        {
+            $this->db->where('username',$this->session->userdata("admin"));
+            $this->db->where('password',md5($this->input->post("old")));
+            $query = $this->db->get("admin");
+            if ($query->num_rows() > 0)
+            {
+                //$query = $query->row_array();
+                $data = array(
+                    'password'=>md5($this->input->post("password")),
+                );
+                $this->db->where('username',$this->session->userdata("admin"));
+                $this->db->update('admin', $data);
+                $this->session->sess_destroy();
+                redirect('admin/index','refresh');
+            }
+            else
+            {
+                $msg['error'] = "旧密码错误！";
+                $this->load->view('admin/editPassword',$msg);
+            }
+        }
+    }
+
+    function login()
+    {
+        $msg['error'] = "";
+        $this->load->view('admin/login',$msg);
+    }
+
+    function checklogin()
+    {
+        if ($this->session->userdata("admin"))
+        {
+            redirect("admin/index");
+        }
+        $msg['error'] = "";
+
+        $rules['username'] = "required";
+        $rules['password'] = "required";
+        $rules['chk'] = "required|callback_code_check";
+        $this->form_validation->set_rules($rules);
+
+        $fields['username'] = '帐户';
+        $fields['password'] = '密码';
+        $fields['chk'] = '验证码';
+        //$this->form_validation->set_fields($fields);
+
+        if ($this->form_validation->run() == FALSE){
+            $this->load->view('admin/login',$msg);
+        }
+        else
+        {
+            $this->db->where('username',$this->input->post("username"));
+            $this->db->where('password',md5($this->input->post("password")));
+            $query = $this->db->get("admin");
+            if ($query->num_rows() > 0)
+            {
+                //$query = $query->row_array();
+                $session_data = array('admin'=>$this->input->post("username"));
+                $this->session->set_userdata($session_data);
+                redirect('admin/index');
+            }
+            else
+            {
+                $msg['error'] = "密码错误！";
+                $this->load->view('admin/login',$msg);
+            }
+        }
+    }
+
+    function captcha(){
+        $this->load->library('CaptchaImage');
+        ob_start();
+        $this->session->set_flashdata('captcha', $this->captchaimage->getString());
+        $this->captchaimage->setFont('./system/fonts/type-ra.ttf',16);
+        $this->captchaimage->draw();
+        ob_flush();
+    }
+
+    function code_check($str){
+        if($str==$this->session->flashdata("captcha")){
+            return TRUE;
+        }else{
+            $this->form_validation->set_message('code_check', '%s不正确');
+            return FALSE;
+        }
+    }
+
+    function logout(){
+        $this->session->sess_destroy();
+        redirect();
+    }
+}
+
+/* End of file admin.php */
+/* Location: ./system/application/controllers/admin.php */
