@@ -19,11 +19,11 @@ class Admin extends CI_Controller {
 
     function index()
     {
-//        if (!$this->session->userdata("admin"))
-//        {
-//            redirect("admin/login");
-//        }
-        $this->load->view('admin/index');
+       if (!$this->session->userdata("admin"))
+       {
+           redirect("admin/login");
+       }
+       $this->load->view('admin/index');
     }
 
 
@@ -88,22 +88,18 @@ class Admin extends CI_Controller {
 
     function checklogin()
     {
-//        if ($this->session->userdata("admin"))
-//        {
-//            redirect("admin/index");
-//        }
+       if ($this->session->userdata("admin"))
+       {
+           redirect("admin/index");
+       }
         //$this->form_validation->set_message('Url check is invalid');
         $msg['error'] = "";
 
         $rules['username'] = "required";
         $rules['password'] = "required";
-        $rules['chk'] = "required|callback_code_check";
         $this->form_validation->set_rules($rules);
 
-        $fields['username'] = '帐户';
-        $fields['password'] = '密码';
-        $fields['chk'] = '验证码';
-        //$this->form_validation->set_fields($fields);
+
 
         if ($this->form_validation->run() == FALSE){
             $this->load->view('admin/login',$msg);
@@ -128,23 +124,6 @@ class Admin extends CI_Controller {
         }
     }
 
-    function captcha(){
-        $this->load->library('CaptchaImage');
-        ob_start();
-        $this->session->set_flashdata('captcha', $this->captchaimage->getString());
-        $this->captchaimage->setFont('./system/fonts/type-ra.ttf',16);
-        $this->captchaimage->draw();
-        ob_flush();
-    }
-
-    function code_check($str){
-        if($str==$this->session->flashdata("captcha")){
-            return TRUE;
-        }else{
-            $this->form_validation->set_message('code_check', '%s不正确');
-            return FALSE;
-        }
-    }
 
     function logout(){
         $this->session->sess_destroy();
